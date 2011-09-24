@@ -4,7 +4,7 @@
   <title>Tribesports Tech Blog</title>
   <link href="http://tribesports.github.com/atom.xml" rel="self"/>
   <link href="http://tribesports.github.com/"/>
-  <updated>2011-09-24T13:03:19+01:00</updated>
+  <updated>2011-09-24T13:15:57+01:00</updated>
   <id>http://tribesports.github.com/</id>
   <author>
     <name>Tribesports Tech Team</name>
@@ -184,6 +184,8 @@
 &lt;/span&gt;&lt;span class=&#8217;line&#8217;&gt;&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/figure&gt;
 
+
+&lt;p&gt;We can now send a request using our custom Mime type in the Accept header, and &lt;a href=&quot;https://gist.github.com/1239258&quot;&gt;receive an appropriate response&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;So far, so good. We&amp;#8217;ve got the Rails responder doing all our heavy lifting, our controllers are clean, and we have versioned resource presentation. That&amp;#8217;s two of our goals accomplished, but we&amp;#8217;ve still got presentation logic cluttering up our business models. To address that we&amp;#8217;ll be using Decorators, which will be the subject of our next blog post.&lt;/p&gt;
 </content>
