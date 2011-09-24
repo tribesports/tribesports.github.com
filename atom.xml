@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title>Tribesports Tech Blog</title>
-  <link href="http://tribesports.github.com/atom.xml" rel="self"/>
-  <link href="http://tribesports.github.com/"/>
-  <updated>2011-09-24T17:27:44+01:00</updated>
-  <id>http://tribesports.github.com/</id>
+  <link href="http://techblog.tribesports.com/atom.xml" rel="self"/>
+  <link href="http://techblog.tribesports.com/"/>
+  <updated>2011-09-24T19:57:17+01:00</updated>
+  <id>http://techblog.tribesports.com/</id>
   <author>
     <name>Tribesports Tech Team</name>
     
@@ -14,9 +14,9 @@
   
   <entry>
     <title>Versioning the Tribesports API</title>
-    <link href="http://tribesports.github.com/blog/2011/09/24/versioning-the-tribesports-api"/>
+    <link href="http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api"/>
     <updated>2011-09-24T09:44:00+01:00</updated>
-    <id>http://tribesports.github.com/blog/2011/09/24/versioning-the-tribesports-api</id>
+    <id>http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api</id>
     <content type="html">&lt;p&gt;As Andrew is hard at work on Tribesports&amp;#8217; upcoming iPhone app, we&amp;#8217;ve been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application&amp;#8217;s internal needs, a full-blown API requires a more systematic approach.&lt;/p&gt;
 
 &lt;p&gt;Our goals are as follows:&lt;/p&gt;
@@ -62,7 +62,7 @@
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/figure&gt;
 
 
-&lt;p&gt;So far, so good. There are two problems here, however. Firstly, we&amp;#8217;re left with controller-level boilerplate that must be replicated in every method that responds to API calls. And secondly, we&amp;#8217;re falling back on our business model&amp;#8217;s default &lt;code&gt;#as_json&lt;/code&gt; method, which will render the entire object. We could override it, or pass in options, but the former conflicts with our versioning requirement while the latter would spread presentation logic throughout our controllers.&lt;/p&gt;
+&lt;p&gt;Already, then, we&amp;#8217;re able to recognise and respond appropriately to requests for our custom MIME type. There are two problems here, however. Firstly, we&amp;#8217;re left with controller-level boilerplate that must be replicated in every method that responds to API calls. And secondly, we&amp;#8217;re falling back on our business model&amp;#8217;s default &lt;code&gt;#as_json&lt;/code&gt; method, which will render the entire object. We could override it, or pass in options, but the former conflicts with our versioning requirement while the latter would spread presentation logic throughout our controllers.&lt;/p&gt;
 
 &lt;p&gt;To address these problems, we look to Rails 3&amp;#8217;s responders and renderers. If we don&amp;#8217;t supply a &lt;code&gt;format.api_v1&lt;/code&gt; block in the response block, Rails&amp;#8217; &lt;a href=&quot;https://github.com/rails/rails/blob/master/actionpack/lib/action_controller/metal/responder.rb&quot;&gt;default Responder&lt;/a&gt; will attempt to intelligently render the resource in the given format. The logic for a simple &lt;code&gt;show&lt;/code&gt; action varies depending on the format type, and runs roughly thus for a given resource:&lt;/p&gt;
 
@@ -193,9 +193,9 @@
   
   <entry>
     <title>As a Tech Team</title>
-    <link href="http://tribesports.github.com/blog/2011/07/28/as-a-tech-team"/>
+    <link href="http://techblog.tribesports.com/blog/2011/07/28/as-a-tech-team"/>
     <updated>2011-07-28T17:17:00+01:00</updated>
-    <id>http://tribesports.github.com/blog/2011/07/28/as-a-tech-team</id>
+    <id>http://techblog.tribesports.com/blog/2011/07/28/as-a-tech-team</id>
     <content type="html">&lt;p&gt;We want a blog&lt;/p&gt;
 
 &lt;p&gt;So we can pontificate&lt;/p&gt;

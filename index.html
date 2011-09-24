@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://tribesports.github.com/">
+  <link rel="canonical" href="http://techblog.tribesports.com/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -46,7 +46,7 @@
 </ul>
 <form action="http://google.com/search" method="get">
   <fieldset role="search">
-    <input type="hidden" name="q" value="site:tribesports.github.com" />
+    <input type="hidden" name="q" value="site:techblog.tribesports.com" />
     <input class="search" type="text" name="q" results="0" placeholder="Search"/>
   </fieldset>
 </form>
@@ -132,7 +132,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>So far, so good. There are two problems here, however. Firstly, we&#8217;re left with controller-level boilerplate that must be replicated in every method that responds to API calls. And secondly, we&#8217;re falling back on our business model&#8217;s default <code>#as_json</code> method, which will render the entire object. We could override it, or pass in options, but the former conflicts with our versioning requirement while the latter would spread presentation logic throughout our controllers.</p>
+<p>Already, then, we&#8217;re able to recognise and respond appropriately to requests for our custom MIME type. There are two problems here, however. Firstly, we&#8217;re left with controller-level boilerplate that must be replicated in every method that responds to API calls. And secondly, we&#8217;re falling back on our business model&#8217;s default <code>#as_json</code> method, which will render the entire object. We could override it, or pass in options, but the former conflicts with our versioning requirement while the latter would spread presentation logic throughout our controllers.</p>
 
 <p>To address these problems, we look to Rails 3&#8217;s responders and renderers. If we don&#8217;t supply a <code>format.api_v1</code> block in the response block, Rails&#8217; <a href="https://github.com/rails/rails/blob/master/actionpack/lib/action_controller/metal/responder.rb">default Responder</a> will attempt to intelligently render the resource in the given format. The logic for a simple <code>show</code> action varies depending on the format type, and runs roughly thus for a given resource:</p>
 
