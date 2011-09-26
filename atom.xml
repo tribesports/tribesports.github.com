@@ -4,7 +4,7 @@
   <title>Tribesports Tech Blog</title>
   <link href="http://techblog.tribesports.com/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2011-09-26T12:10:54+01:00</updated>
+  <updated>2011-09-26T14:38:08+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name>Tribesports Tech Team</name>
@@ -17,7 +17,7 @@
     <link href="http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api"/>
     <updated>2011-09-24T09:44:00+01:00</updated>
     <id>http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api</id>
-    <content type="html">&lt;p&gt;As Andrew is hard at work on Tribesports&amp;#8217; upcoming iPhone app, we&amp;#8217;ve been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application&amp;#8217;s internal needs, a full-blown API requires a more systematic approach.&lt;/p&gt;
+    <content type="html">&lt;p&gt;As Andrew is hard at work on the upcoming &lt;a href=&quot;http://tribesports.com&quot;&gt;Tribesports&lt;/a&gt; iPhone app, we&amp;#8217;ve been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application&amp;#8217;s internal needs, a full-blown API requires a more systematic approach.&lt;/p&gt;
 
 &lt;p&gt;Our goals are as follows:&lt;/p&gt;
 
@@ -67,8 +67,12 @@
 &lt;p&gt;To address these problems, we look to Rails 3&amp;#8217;s responders and renderers. If we don&amp;#8217;t supply a &lt;code&gt;format.api_v1&lt;/code&gt; block in the response block, Rails&amp;#8217; &lt;a href=&quot;https://github.com/rails/rails/blob/master/actionpack/lib/action_controller/metal/responder.rb&quot;&gt;default Responder&lt;/a&gt; will attempt to intelligently render the resource in the given format. The logic for a simple &lt;code&gt;show&lt;/code&gt; action varies depending on the format type, and runs roughly thus for a given resource:&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;Navigational formats&lt;/strong&gt; (e.g. HTML): Render using the appropriate template (e.g. &lt;code&gt;&#8217;activities/show.html.haml&#8217;&lt;/code&gt;)&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;API formats&lt;/strong&gt; (everything else): If the resource responds to a &lt;code&gt;#to_#{format}&lt;/code&gt; method, and a renderer exists for the format, then use the renderer; otherwise, attempt to render using an appropriate template.&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;Navigational formats&lt;/strong&gt; (e.g. HTML):&lt;/p&gt;
+
+&lt;p&gt;Render using the appropriate template (e.g. &lt;code&gt;&#8217;activities/show.html.haml&#8217;&lt;/code&gt;)&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;API formats&lt;/strong&gt; (everything else):&lt;/p&gt;
+
+&lt;p&gt;If the resource responds to a &lt;code&gt;#to_#{format}&lt;/code&gt; method, and a renderer exists for the format, then use the renderer; otherwise, attempt to render using an appropriate template.&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 

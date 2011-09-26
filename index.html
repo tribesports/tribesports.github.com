@@ -9,7 +9,7 @@
   <meta name="author" content="Tribesports Tech Team">
 
   
-  <meta name="description" content="As Andrew is hard at work on Tribesports&#8217; upcoming iPhone app, we&#8217;ve been paying a bit of attention to our API. Where previously we had...">
+  <meta name="description" content="As Andrew is hard at work on the upcoming Tribesports iPhone app, we&#8217;ve been paying a bit of attention to our API. Where previously we had re...">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -82,12 +82,14 @@
 
 <time datetime="2011-09-24T09:44:00+01:00" pubdate  data-updated="true" >Sep 24<span>th</span>, 2011</time>
         
+         | <a href="/blog/2011/09/24/versioning-the-tribesports-api#disqus_thread">Comments</a>
+        
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>As Andrew is hard at work on Tribesports&#8217; upcoming iPhone app, we&#8217;ve been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application&#8217;s internal needs, a full-blown API requires a more systematic approach.</p>
+  <div class="entry-content"><p>As Andrew is hard at work on the upcoming <a href="http://tribesports.com">Tribesports</a> iPhone app, we&#8217;ve been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application&#8217;s internal needs, a full-blown API requires a more systematic approach.</p>
 
 <p>Our goals are as follows:</p>
 
@@ -137,8 +139,12 @@
 <p>To address these problems, we look to Rails 3&#8217;s responders and renderers. If we don&#8217;t supply a <code>format.api_v1</code> block in the response block, Rails&#8217; <a href="https://github.com/rails/rails/blob/master/actionpack/lib/action_controller/metal/responder.rb">default Responder</a> will attempt to intelligently render the resource in the given format. The logic for a simple <code>show</code> action varies depending on the format type, and runs roughly thus for a given resource:</p>
 
 <ul>
-<li><p><strong>Navigational formats</strong> (e.g. HTML): Render using the appropriate template (e.g. <code>'activities/show.html.haml'</code>)</p></li>
-<li><p><strong>API formats</strong> (everything else): If the resource responds to a <code>#to_#{format}</code> method, and a renderer exists for the format, then use the renderer; otherwise, attempt to render using an appropriate template.</p></li>
+<li><p><strong>Navigational formats</strong> (e.g. HTML):</p>
+
+<p>Render using the appropriate template (e.g. <code>'activities/show.html.haml'</code>)</p></li>
+<li><p><strong>API formats</strong> (everything else):</p>
+
+<p>If the resource responds to a <code>#to_#{format}</code> method, and a renderer exists for the format, then use the renderer; otherwise, attempt to render using an appropriate template.</p></li>
 </ul>
 
 
@@ -285,6 +291,8 @@
 
 
 <time datetime="2011-07-28T17:17:00+01:00" pubdate  data-updated="true" >Jul 28<span>th</span>, 2011</time>
+        
+         | <a href="/blog/2011/07/28/as-a-tech-team#disqus_thread">Comments</a>
         
       </p>
     
