@@ -165,7 +165,7 @@
 </span><span class='line'>    <span class="n">add</span> <span class="ss">:json</span> <span class="k">do</span> <span class="o">|</span><span class="n">json</span><span class="p">,</span> <span class="n">options</span><span class="o">|</span>
 </span><span class='line'>      <span class="n">json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">unless</span> <span class="n">json</span><span class="o">.</span><span class="n">kind_of?</span><span class="p">(</span><span class="nb">String</span><span class="p">)</span>
 </span><span class='line'>      <span class="n">json</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="n">options</span><span class="o">[</span><span class="ss">:callback</span><span class="o">]</span><span class="si">}</span><span class="s2">(</span><span class="si">#{</span><span class="n">json</span><span class="si">}</span><span class="s2">)&quot;</span> <span class="k">unless</span> <span class="n">options</span><span class="o">[</span><span class="ss">:callback</span><span class="o">].</span><span class="n">blank?</span>
-</span><span class='line'>      <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">||=</span> <span class="no">MIME</span><span class="o">::</span><span class="no">JSON</span>
+</span><span class='line'>      <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">||=</span> <span class="no">Mime</span><span class="o">::</span><span class="no">JSON</span>
 </span><span class='line'>      <span class="n">json</span>
 </span><span class='line'>    <span class="k">end</span>
 </span><span class='line'>  <span class="k">end</span>
@@ -189,7 +189,7 @@
 <span class='line-number'>12</span>
 </pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># app/renderers/api_v1_renderer.rb </span>
 </span><span class='line'><span class="no">ActionController</span><span class="o">::</span><span class="no">Renderers</span><span class="o">.</span><span class="n">add</span> <span class="ss">:api_v1</span> <span class="k">do</span> <span class="o">|</span><span class="n">resource</span><span class="p">,</span> <span class="n">options</span><span class="o">|</span>
-</span><span class='line'>  <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="no">MIME</span><span class="o">::</span><span class="no">API_V1</span>
+</span><span class='line'>  <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="no">Mime</span><span class="o">::</span><span class="no">API_V1</span>
 </span><span class='line'>  <span class="nb">self</span><span class="o">.</span><span class="n">response_body</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">to_api_v1</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
 </span><span class='line'><span class="k">end</span>
 </span><span class='line'>
