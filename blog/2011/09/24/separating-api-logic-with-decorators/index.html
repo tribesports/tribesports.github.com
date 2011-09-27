@@ -186,6 +186,7 @@
 <span class='line-number'>28</span>
 <span class='line-number'>29</span>
 <span class='line-number'>30</span>
+<span class='line-number'>31</span>
 </pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ApplicationDecorator</span> <span class="o">&lt;</span> <span class="no">Draper</span><span class="o">::</span><span class="no">Base</span>
 </span><span class='line'>
 </span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">has_decorator_for?</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span>
@@ -203,7 +204,8 @@
 </span><span class='line'>  <span class="c1"># (&lt;#Activity id: 1&gt;, :api_v1) =&gt; API_V1::ActivityDecorator</span>
 </span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">decorator_class_for</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span>
 </span><span class='line'>    <span class="n">namespace_for</span><span class="p">(</span><span class="nb">format</span><span class="p">)</span><span class="o">.</span><span class="n">const_get</span><span class="p">(</span><span class="n">decorator_name_for</span><span class="p">(</span><span class="n">resource</span><span class="p">))</span>
-</span><span class='line'>  <span class="k">rescue</span> <span class="no">NameError</span>
+</span><span class='line'>  <span class="k">rescue</span> <span class="no">NameError</span> <span class="o">=&gt;</span> <span class="n">e</span>
+</span><span class='line'>    <span class="k">raise</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="no">NoMethodError</span><span class="p">)</span>
 </span><span class='line'>    <span class="kp">nil</span>
 </span><span class='line'>  <span class="k">end</span>
 </span><span class='line'>
