@@ -4,7 +4,7 @@
   <title>Tribesports Tech Blog</title>
   <link href="http://techblog.tribesports.com/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2011-09-27T10:35:11+01:00</updated>
+  <updated>2011-09-27T10:41:59+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name>Tribesports Tech Team</name>
@@ -205,11 +205,11 @@
 &lt;p&gt;And that&amp;#8217;s it! To recap, we have:&lt;/p&gt;
 
 &lt;ol&gt;
-&lt;li&gt;Registered a custom MIME type to inform Rails about our API format&lt;/li&gt;
-&lt;li&gt;Written decorators to contain the API presentation logic&lt;/li&gt;
-&lt;li&gt;Built a lookup system to locate the format-specific decorator for each resource&lt;/li&gt;
-&lt;li&gt;Created a custom responder to let Rails know what resources can be renderered&lt;/li&gt;
-&lt;li&gt;Created a custom renderer that first decorates our resources, then renders them&lt;/li&gt;
+&lt;li&gt;Registered a custom MIME type to inform Rails about our API format,&lt;/li&gt;
+&lt;li&gt;Written decorators to contain the API presentation logic,&lt;/li&gt;
+&lt;li&gt;Built a lookup system to locate the format-specific decorator for each resource,&lt;/li&gt;
+&lt;li&gt;Created a custom responder to let Rails know what resources can be renderered, and&lt;/li&gt;
+&lt;li&gt;Created a custom renderer that first decorates our resources, then renders them.&lt;/li&gt;
 &lt;/ol&gt;
 
 
