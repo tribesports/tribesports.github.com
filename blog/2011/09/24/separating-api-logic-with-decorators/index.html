@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Tribesports Tech Blog</title>
+  <title>Separating API Logic With Decorators - Tribesports Tech Blog</title>
   <meta name="author" content="Tribesports Tech Team">
 
   
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://techblog.tribesports.com/">
+  <link rel="canonical" href="http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <script src="/javascripts/modernizr-2.0.js"></script>
@@ -58,15 +58,12 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/09/24/separating-api-logic-with-decorators">Separating API Logic With Decorators</a></h1>
+      <h1 class="entry-title">Separating API Logic With Decorators</h1>
     
     
       <p class="meta">
@@ -82,14 +79,14 @@
 
 <time datetime="2011-09-24T13:49:00+01:00" pubdate  data-updated="true" >Sep 24<span>th</span>, 2011</time>
         
-         | <a href="/blog/2011/09/24/separating-api-logic-with-decorators#disqus_thread">Comments</a>
+         | <a href="#disqus_thread">Comments</a>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>In our <a href="/blog/2011/09/24/versioning-the-tribesports-api">last post</a> we demonstrated how to use Rails 3&#8217;s response and rendering system to provide a cleanly-versioned API. By defining a custom MIME type and a renderer for that type, we were able to version our API, and handle responses without any changes to our controllers.</p>
+<div class="entry-content"><p>In our <a href="/blog/2011/09/24/versioning-the-tribesports-api">last post</a> we demonstrated how to use Rails 3&#8217;s response and rendering system to provide a cleanly-versioned API. By defining a custom MIME type and a renderer for that type, we were able to version our API, and handle responses without any changes to our controllers.</p>
 
 <p>However, we were left with unsightly <code>#to_api_v1</code> methods on all of our business models. We&#8217;d like to separate presentation logic from our business logic, and to do that we&#8217;re going to use decorators. We&#8217;re making use of Jeff Casimir&#8217;s <a href="https://github.com/jcasimir/draper">draper</a> gem, which provides some nice convenience methods for decorating Rails models.</p>
 
@@ -289,22 +286,16 @@
 
 <p>We&#8217;ve achieved all of our <a href="/blog/2011/09/24/versioning-the-tribesports-api">original goals</a>, and with only a few tens of lines of code. Time for a particularly smug cup of tea; the Tribesports office favours <a href="http://en.wikipedia.org/wiki/Oolong_(rabbit">Oolong</a>) for this purpose. Lapsang Souchong is alleged by some to be smugger still, but it tastes like boiled furniture.</p>
 </div>
-  
-  
 
 
-    </article>
-  
-  
-    <article>
+  <footer>
+    <p class="meta">
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/09/24/versioning-the-tribesports-api">Versioning the Tribesports API</a></h1>
-    
-    
-      <p class="meta">
-        
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Simon Coffey</span></span>
+
+      
 
 
 
@@ -314,243 +305,39 @@
 
 
 
-<time datetime="2011-09-24T09:44:00+01:00" pubdate  data-updated="true" >Sep 24<span>th</span>, 2011</time>
-        
-         | <a href="/blog/2011/09/24/versioning-the-tribesports-api#disqus_thread">Comments</a>
-        
-      </p>
+<time datetime="2011-09-24T13:49:00+01:00" pubdate  data-updated="true" >Sep 24<span>th</span>, 2011</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/api/'>API</a>, <a class='category' href='/blog/categories/decorators/'>Decorators</a>, <a class='category' href='/blog/categories/rails/'>Rails</a>
+  
+</span>
+
+
+    </p>
     
-  </header>
-
-
-  <div class="entry-content"><p>As Andrew is hard at work on the upcoming <a href="http://tribesports.com">Tribesports</a> iPhone app, we&#8217;ve been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application&#8217;s internal needs, a full-blown API requires a more systematic approach.</p>
-
-<p>Our goals are as follows:</p>
-
-<ol>
-<li>Allow clean API versioning</li>
-<li>Separate API presentation logic from business models</li>
-<li>Minimise additional controller complexity</li>
-</ol>
-
-
-<p>Like all good REST disciples, we know that adding versioning information to URLs will cause the breakdown of civil society, so we define a custom MIME type for use in the Accept header of requests:</p>
-
-<figure class='code'><figcaption><span>config/initializers/mime_types.rb </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="no">Mime</span><span class="o">::</span><span class="no">Type</span><span class="o">.</span><span class="n">register</span> <span class="s2">&quot;application/vnd.tribesports.api.v1+json&quot;</span><span class="p">,</span> <span class="ss">:api_v1</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>This means Rails will now treat our <code>:api_v1</code> format as a first-class citizen, so we can use it in controller response blocks, like so:</p>
-
-<figure class='code'><figcaption><span>app/controllers/activities_controller.rb </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ActivitiesController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
-</span><span class='line'>  <span class="n">respond_to</span> <span class="ss">:html</span><span class="p">,</span> <span class="ss">:api_v1</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="k">def</span> <span class="nf">show</span>
-</span><span class='line'>    <span class="vi">@activity</span> <span class="o">=</span> <span class="no">Activity</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">params</span><span class="o">[</span><span class="ss">:activity_id</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">respond_with</span><span class="p">(</span><span class="vi">@activity</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="nb">format</span><span class="o">|</span>
-</span><span class='line'>      <span class="nb">format</span><span class="o">.</span><span class="n">api_v1</span> <span class="p">{</span> <span class="n">render</span> <span class="ss">:text</span> <span class="o">=&gt;</span> <span class="vi">@activity</span><span class="o">.</span><span class="n">to_json</span> <span class="p">}</span>
-</span><span class='line'>    <span class="k">end</span>
-</span><span class='line'>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Already, then, we&#8217;re able to recognise and respond appropriately to requests for our custom MIME type. There are two problems here, however. Firstly, we&#8217;re left with controller-level boilerplate that must be replicated in every method that responds to API calls. And secondly, we&#8217;re falling back on our business model&#8217;s default <code>#as_json</code> method, which will render the entire object. We could override it, or pass in options, but the former conflicts with our versioning requirement while the latter would spread presentation logic throughout our controllers.</p>
-
-<p>To address these problems, we look to Rails 3&#8217;s responders and renderers. If we don&#8217;t supply a <code>format.api_v1</code> block in the response block, Rails&#8217; <a href="https://github.com/rails/rails/blob/master/actionpack/lib/action_controller/metal/responder.rb">default Responder</a> will attempt to intelligently render the resource in the given format. The logic for a simple <code>show</code> action varies depending on the format type, and runs roughly thus for a given resource:</p>
-
-<ul>
-<li><p><strong>Navigational formats</strong> (e.g. HTML):</p>
-
-<p>Render using the appropriate template (e.g. <code>'activities/show.html.haml'</code>)</p></li>
-<li><p><strong>API formats</strong> (everything else):</p>
-
-<p>If the resource responds to a <code>#to_#{format}</code> method, and a renderer exists for the format, then use the renderer; otherwise, attempt to render using an appropriate template.</p></li>
-</ul>
-
-
-<p>For update and create methods there is additional logic to deal with redirection and error handling, but this represents the basics.</p>
-
-<p>To make our custom format work properly with the responder logic, we therefore need to define a <code>#to_api_v1</code> method on all our models, and define a custom renderer so Rails will know what to actually do with this method.</p>
-
-<p>Let&#8217;s have a look at the built-in <a href="https://github.com/rails/rails/blob/v3.0.10/actionpack/lib/action_controller/metal/renderers.rb#L73">JSON renderer</a>:</p>
-
-<figure class='code'><figcaption><span>actionpack/lib/action_controller/metal/renderers.rb </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">module</span> <span class="nn">ActionController</span>
-</span><span class='line'>  <span class="k">module</span> <span class="nn">Renderers</span>
-</span><span class='line'>    <span class="c1"># ...</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">add</span> <span class="ss">:json</span> <span class="k">do</span> <span class="o">|</span><span class="n">json</span><span class="p">,</span> <span class="n">options</span><span class="o">|</span>
-</span><span class='line'>      <span class="n">json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">unless</span> <span class="n">json</span><span class="o">.</span><span class="n">kind_of?</span><span class="p">(</span><span class="nb">String</span><span class="p">)</span>
-</span><span class='line'>      <span class="n">json</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="n">options</span><span class="o">[</span><span class="ss">:callback</span><span class="o">]</span><span class="si">}</span><span class="s2">(</span><span class="si">#{</span><span class="n">json</span><span class="si">}</span><span class="s2">)&quot;</span> <span class="k">unless</span> <span class="n">options</span><span class="o">[</span><span class="ss">:callback</span><span class="o">].</span><span class="n">blank?</span>
-</span><span class='line'>      <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">||=</span> <span class="no">Mime</span><span class="o">::</span><span class="no">JSON</span>
-</span><span class='line'>      <span class="n">json</span>
-</span><span class='line'>    <span class="k">end</span>
-</span><span class='line'>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>We can see the renderer is passed the resource (potentially as an already-JSON-encoded string) and a set of options. If the resource isn&#8217;t already encoded, the renderer encodes it using the supplied options. It then wraps it in an optional callback, sets the response MIME type, and returns the output. So our custom renderer might appear as follows:</p>
-
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># app/renderers/api_v1_renderer.rb </span>
-</span><span class='line'><span class="no">ActionController</span><span class="o">::</span><span class="no">Renderers</span><span class="o">.</span><span class="n">add</span> <span class="ss">:api_v1</span> <span class="k">do</span> <span class="o">|</span><span class="n">resource</span><span class="p">,</span> <span class="n">options</span><span class="o">|</span>
-</span><span class='line'>  <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="no">Mime</span><span class="o">::</span><span class="no">API_V1</span>
-</span><span class='line'>  <span class="nb">self</span><span class="o">.</span><span class="n">response_body</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">to_api_v1</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-</span><span class='line'><span class="k">end</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># app/controllers/application_controller.rb</span>
-</span><span class='line'><span class="n">require_relative</span> <span class="s1">&#39;../renderers/api_v1_renderer&#39;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">class</span> <span class="nc">ApplicationController</span> <span class="o">&lt;</span> <span class="no">ActionController</span><span class="o">::</span><span class="no">Base</span>
-</span><span class='line'>  <span class="c1">#...</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Now all we have to do is define <code>#to_api_v1</code> on every model we want to represent in the API (yes, yes, we know - a horrible mixing of concerns. More on that later.):</p>
-
-<figure class='code'><figcaption><span>app/models/activity.rb </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">Activity</span>
-</span><span class='line'>  <span class="c1">#...</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="k">def</span> <span class="nf">to_api_v1</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>      <span class="nb">id</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span>
-</span><span class='line'>      <span class="n">content</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
-</span><span class='line'>      <span class="n">creator_name</span><span class="p">:</span> <span class="n">creator</span><span class="o">.</span><span class="n">name</span>
-</span><span class='line'>    <span class="p">}</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>As a result of all that, there&#8217;s no longer any need for the custom response block in our controller methods:</p>
-
-<figure class='code'><figcaption><span>app/controllers/activities_controller.rb </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ActivitiesController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
-</span><span class='line'>  <span class="n">respond_to</span> <span class="ss">:html</span><span class="p">,</span> <span class="ss">:api_v1</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="k">def</span> <span class="nf">show</span>
-</span><span class='line'>    <span class="vi">@activity</span> <span class="o">=</span> <span class="no">Activity</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">params</span><span class="o">[</span><span class="ss">:activity_id</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">respond_with</span><span class="p">(</span><span class="vi">@activity</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>We can now send a request using our custom MIME type in the Accept header, and <a href="https://gist.github.com/1239258">receive an appropriate response</a>.</p>
-
-<p>So far, so good. We&#8217;ve got the Rails responder doing all our heavy lifting, our controllers are clean, and we have versioned resource presentation. That&#8217;s two of our goals accomplished, but we&#8217;ve still got presentation logic cluttering up our business models. To address that we&#8217;ll be using Decorators, which will be the subject of our next blog post.</p>
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators" data-via="tribesportstech" data-counturl="http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
 </div>
-  
-  
 
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/07/28/as-a-tech-team">As a Tech Team</a></h1>
-    
-    
-      <p class="meta">
-        
+  </footer>
+</article>
 
-
-
-
-
-  
-
-
-
-<time datetime="2011-07-28T17:17:00+01:00" pubdate  data-updated="true" >Jul 28<span>th</span>, 2011</time>
-        
-         | <a href="/blog/2011/07/28/as-a-tech-team#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>We want a blog</p>
-
-<p>So we can pontificate</p>
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 </div>
-  
-  
+  </section>
 
-
-    </article>
-  
-  <nav class="pagination">
-    <div>
-      
-      <a href="/blog/archives">Blog Archives</a>
-      
-    </div>
-  </nav>
 </div>
+
 <aside class="sidebar">
   
     <section>
@@ -576,7 +363,7 @@
 <section>
   <h1>Latest Tweets</h1>
   <ul id="tweets">
-    <li class="loading">Status updating&#8230;</li>
+    <li class="loading">Status updating...</li>
   </ul>
   <script type="text/javascript">
     $.domReady(function(){
@@ -595,6 +382,7 @@
   
 </aside>
 
+
     </div>
   </div>
   <footer role="contentinfo"><p>
@@ -610,7 +398,10 @@
       var disqus_shortname = 'tribesportstechblog';
       
         
-        var disqus_script = 'count.js'
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators';
+        var disqus_url = 'http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators';
+        var disqus_script = 'embed.js'
       
 
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

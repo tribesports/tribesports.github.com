@@ -9,11 +9,17 @@
         <lastmod>2011-09-26T14:10:51+01:00</lastmod>
     </url>
     <url>
+        <loc>
+            http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators
+        </loc>
+        <lastmod>2011-09-26T16:29:16+01:00</lastmod>
+    </url>
+    <url>
         <loc>http://techblog.tribesports.com/blog/archives/</loc>
-        <lastmod>2011-09-26T14:10:51+01:00</lastmod>
+        <lastmod>2011-09-26T16:29:16+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/</loc>
-        <lastmod>2011-09-26T14:10:51+01:00</lastmod>
+        <lastmod>2011-09-26T16:29:16+01:00</lastmod>
     </url>
 </urlset>
