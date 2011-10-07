@@ -2,18 +2,24 @@
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
         <loc>http://techblog.tribesports.com/blog/2011/07/28/as-a-tech-team</loc>
-        <lastmod>2011-10-07T13:02:26+01:00</lastmod>
+        <lastmod>2011-10-07T13:04:37+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api</loc>
-        <lastmod>2011-10-07T13:02:26+01:00</lastmod>
+        <lastmod>2011-10-07T13:04:37+01:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators
+        </loc>
+        <lastmod>2011-10-07T13:04:37+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/blog/archives/</loc>
-        <lastmod>2011-10-07T13:02:26+01:00</lastmod>
+        <lastmod>2011-10-07T13:04:37+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/</loc>
-        <lastmod>2011-10-07T13:02:26+01:00</lastmod>
+        <lastmod>2011-10-07T13:04:37+01:00</lastmod>
     </url>
 </urlset>
