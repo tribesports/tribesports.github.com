@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Rails | Tribesports Tech Blog]]></title>
+  <link href="http://techblog.tribesports.com/blog/categories/rails/atom.xml" rel="self"/>
+  <link href="http://techblog.tribesports.com/"/>
+  <updated>2012-02-26T15:07:03+00:00</updated>
+  <id>http://techblog.tribesports.com/</id>
+  <author>
+    <name><![CDATA[Tribesports Tech Team]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Separating API Logic With Decorators]]></title>
+    <link href="http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators"/>
+    <updated>2011-09-24T13:49:00+01:00</updated>
+    <id>http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators</id>
+    <content type="html"><![CDATA[<p>In our <a href="/blog/2011/09/24/versioning-the-tribesports-api">last post</a> we demonstrated how to use Rails 3's response and rendering system to provide a cleanly-versioned API. By defining a custom MIME type and a renderer for that type, we were able to version our API, and handle responses without any changes to our controllers.</p>
+
+<p>However, we were left with unsightly <code>#to_api_v1</code> methods on all of our business models. We'd like to separate presentation logic from our business logic, and to do that we're going to use decorators. We're making use of Jeff Casimir's <a href="https://github.com/jcasimir/draper">draper</a> gem, which provides some nice convenience methods for decorating Rails models.</p>
+
+<p>We start by creating a namespaced decorator for our Activity model, and move the <code>Activity#to_api_v1</code> method into it:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/decorators/api_v1/activity_decorator.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">module</span> <span class="nn">API_V1</span>
+</span><span class='line'>  <span class="k">class</span> <span class="nc">ActivityDecorator</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">Draper</span><span class="o">::</span><span class="no">Base</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;decorates :activity</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">def to_api_v1(options = {})</span>
+</span><span class='line'><span class="sr">  {</span>
+</span><span class='line'><span class="sr">    id: model.id,</span>
+</span><span class='line'><span class="sr">    content: model.content,</span>
+</span><span class='line'><span class="sr">    creator_name: model.creator_name</span>
+</span><span class='line'><span class="sr">  }.to_json(options)</span>
+</span><span class='line'><span class="sr">end</span>
+</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This is much better - our presentation logic is out of our model. However, we've created a problem: Rails' default Responder was relying on the <code>Activity#to_api_v1</code> method being present to detect whether it was capable of rendering an Activity instance in our API format. We need to create a custom responder that will also render a resource if an appropriate Decorator can be found.</p>
+
+<p>The responder uses <a href="https://github.com/rails/rails/blob/v3.0.10/actionpack/lib/action_controller/metal/responder.rb#L173">the method <code>#resourceful?</code></a> to determine whether a resource can be rendered in the given format (we have no idea what the MacGuyverish name is about). We can override this method:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;h1&gt;app/</span><span class="n">responders</span><span class="o">/</span><span class="n">application_responder</span><span class="o">.</span><span class="n">rb</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;class ApplicationResponder &amp;lt; ApplicationController::Responder</span>
+</span><span class='line'><span class="sr">  def resourceful?&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">super</span> <span class="o">||</span> <span class="no">ApplicationDecorator</span><span class="o">.</span><span class="n">has_decorator_for?</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;h1&gt;app/</span><span class="n">controllers</span><span class="o">/</span><span class="n">application_controller</span><span class="o">.</span><span class="n">rb</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;class ApplicationController &amp;lt; ActionController::Base</span>
+</span><span class='line'><span class="sr">  self.responder = ApplicationResponder</span>
+</span><span class='line'><span class="sr">  # ...</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This makes use of some decorator lookup methods that we provide in our application's base decorator class:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/decorators/application_decorator.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ApplicationDecorator</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">Draper</span><span class="o">::</span><span class="no">Base</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  def self.has_decorator_for?(resource, format)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kp">true</span> <span class="k">if</span> <span class="n">decorator_class_for</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  def self.decorator_for(resource, format)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">if</span> <span class="n">decorator_class</span> <span class="o">=</span> <span class="n">decorator_class_for</span><span class="p">(</span><span class="n">resource_format</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">decorator_class</span><span class="o">.</span><span class="n">decorate</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  private&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="c1"># (&amp;lt;#Activity id: 1&gt;, :api_v1) =&gt; API_V1::ActivityDecorator</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">decorator_class_for</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="nb">format</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;namespace_for(format).const_get(decorator_name_for(resource))</span>
+</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  rescue NameError =&gt; e&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">raise</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="no">NoMethodError</span><span class="p">)</span>
+</span><span class='line'><span class="kp">nil</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  def self.namespace_for(format)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="no">Object</span><span class="o">.</span><span class="n">const_get</span><span class="p">(</span><span class="nb">format</span><span class="o">.</span><span class="n">to_s</span><span class="o">.</span><span class="n">upcase</span><span class="p">)</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  def self.decorator_name_for(resource)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">resource</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;Decorator&quot;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This means that if we're consistent with our decorator naming, we can look up the appropriate decorator according to resource class and format. The above is slightly simplified - there are extra cases required if the resource is an array or an <code>ActiveRecord::Relation</code> (as you might see in index actions), but these aren't particularly interesting.</p>
+
+<p>Now we have a custom responder that will handle decorated resources properly; we have a decorator lookup system that will return an appropriately-decorated resource according to the requested format; and we have the decorator itself. All we need to do now is modify our renderer so that it will decorate a resource appropriately before rendering it.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/renderers/api_v1_renderer.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="no">ActionController</span><span class="o">::</span><span class="no">Renderers</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="ss">:api_v1</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">resource</span><span class="p">,</span> <span class="n">options</span><span class="o">|</span>
+</span><span class='line'>  <span class="nb">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="no">Mime</span><span class="o">::</span><span class="no">API_V1</span>
+</span><span class='line'>  <span class="n">decorated_resource</span> <span class="o">=</span> <span class="no">ApplicationDecorator</span><span class="o">.</span><span class="n">decorator_for</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="ss">:api_v1</span><span class="p">)</span> <span class="o">||</span> <span class="n">resource</span>
+</span><span class='line'>  <span class="n">render</span> <span class="n">options</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="ss">:json</span> <span class="o">=&gt;</span> <span class="n">decorated_resource</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This is largely self-explanatory; the main point to note is that if the renderer can't find an appropriate decorator, it will fall back on the default json rendering. Isn't that what we wanted to avoid? Yes, but with a caveat: if a resource has errors (for example, after an invalid update), the responder doesn't render the resource itself; it renders the array of errors. In this case, then, for the time being we're just going to send the JSON representation of that array.</p>
+
+<p>Finally, since we're using the built-in JSON renderer to actually create the output (it's JSON we're sending, after all), we modify our decorators to respond to <code>#as_json</code> instead of <code>#to_api_v1</code>:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/decorators/api_v1/activity_decorator.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">module</span> <span class="nn">API_V1</span>
+</span><span class='line'>  <span class="k">class</span> <span class="nc">ActivityDecorator</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">ApplicationDecorator</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;decorates :activity</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">def as_json(options = {})</span>
+</span><span class='line'><span class="sr">  {</span>
+</span><span class='line'><span class="sr">    id: model.id,</span>
+</span><span class='line'><span class="sr">    content: model.content,</span>
+</span><span class='line'><span class="sr">    creator_name: model.creator_name</span>
+</span><span class='line'><span class="sr">  }</span>
+</span><span class='line'><span class="sr">end</span>
+</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>And that's it! To recap, we have:</p>
+
+<ol>
+<li>Registered a custom MIME type to inform Rails about our API format,</li>
+<li>Written decorators to contain the API presentation logic,</li>
+<li>Built a lookup system to locate the format-specific decorator for each resource,</li>
+<li>Created a custom responder to let Rails know what resources can be renderered, and</li>
+<li>Created a custom renderer that first decorates our resources, then renders them.</li>
+</ol>
+
+
+<p>As a result, we're able to keep our API presentation logic completely separate, organised using version-specific namespaces. Adding a new controller action to our API is as simple as writing <code>respond_to :api_v1</code> in the appropriate controller, and ensuring that a correctly-named decorator exists for that resource type. To create a second version of the API, we just define a new MIME type, renderer and add the appropriate decorators. And all of this means that our controller actions themselves require no extra code at all.</p>
+
+<p>We've achieved all of our <a href="/blog/2011/09/24/versioning-the-tribesports-api">original goals</a>, and with only a few tens of lines of code. Time for a particularly smug cup of tea; the Tribesports office favours <a href="http://en.wikipedia.org/wiki/Oolong_%28rabbit%29">Oolong</a> for this purpose. Lapsang Souchong is alleged by some to be smugger still, but it tastes like boiled furniture.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Versioning the Tribesports API]]></title>
+    <link href="http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api"/>
+    <updated>2011-09-24T09:44:00+01:00</updated>
+    <id>http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api</id>
+    <content type="html"><![CDATA[<p>As Andrew is hard at work on the upcoming <a href="http://tribesports.com">Tribesports</a> iPhone app, we've been paying a bit of attention to our API. Where previously we had responded to JSON requests in a rather ad-hoc fashion according to our application's internal needs, a full-blown API requires a more systematic approach.</p>
+
+<p>Our goals are as follows:</p>
+
+<ol>
+<li>Allow clean API versioning</li>
+<li>Separate API presentation logic from business models</li>
+<li>Minimise additional controller complexity</li>
+</ol>
+
+
+<p>Like all good REST disciples, we know that adding versioning information to URLs will cause the breakdown of civil society, so we define a custom MIME type for use in the Accept header of requests:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>config/initializers/mime_types.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="no">Mime</span><span class="o">::</span><span class="no">Type</span><span class="o">.</span><span class="n">register</span> <span class="s2">&quot;application/vnd.tribesports.api.v1+json&quot;</span><span class="p">,</span> <span class="ss">:api_v1</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This means Rails will now treat our <code>:api_v1</code> format as a first-class citizen, so we can use it in controller response blocks, like so:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/controllers/activities_controller.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ActivitiesController</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="n">respond_to</span> <span class="ss">:html</span><span class="p">,</span> <span class="ss">:api_v1</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  def show&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="vi">@activity</span> <span class="o">=</span> <span class="no">Activity</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">params</span><span class="o">[</span><span class="ss">:activity_id</span><span class="o">]</span><span class="p">)</span>
+</span><span class='line'><span class="n">respond_with</span><span class="p">(</span><span class="vi">@activity</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="nb">format</span><span class="o">|</span>
+</span><span class='line'>  <span class="nb">format</span><span class="o">.</span><span class="n">api_v1</span> <span class="p">{</span> <span class="n">render</span> <span class="ss">:text</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="vi">@activity</span><span class="o">.</span><span class="n">to_json</span> <span class="p">}</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Already, then, we're able to recognise and respond appropriately to requests for our custom MIME type. There are two problems here, however. Firstly, we're left with controller-level boilerplate that must be replicated in every method that responds to API calls. And secondly, we're falling back on our business model's default <code>#as_json</code> method, which will render the entire object. We could override it, or pass in options, but the former conflicts with our versioning requirement while the latter would spread presentation logic throughout our controllers.</p>
+
+<p>To address these problems, we look to Rails 3's responders and renderers. If we don't supply a <code>format.api_v1</code> block in the response block, Rails' <a href="https://github.com/rails/rails/blob/master/actionpack/lib/action_controller/metal/responder.rb">default Responder</a> will attempt to intelligently render the resource in the given format. The logic for a simple <code>show</code> action varies depending on the format type, and runs roughly thus for a given resource:</p>
+
+<ul>
+<li><p><strong>Navigational formats</strong> (e.g. HTML):</p>
+
+<p>Render using the appropriate template (e.g. <code>'activities/show.html.haml'</code>)</p></li>
+<li><p><strong>API formats</strong> (everything else):</p>
+
+<p>If the resource responds to a <code>#to_#{format}</code> method, and a renderer exists for the format, then use the renderer; otherwise, attempt to render using an appropriate template.</p></li>
+</ul>
+
+
+<p>For update and create methods there is additional logic to deal with redirection and error handling, but this represents the basics.</p>
+
+<p>To make our custom format work properly with the responder logic, we therefore need to define a <code>#to_api_v1</code> method on all our models, and define a custom renderer so Rails will know what to actually do with this method.</p>
+
+<p>Let's have a look at the built-in <a href="https://github.com/rails/rails/blob/v3.0.10/actionpack/lib/action_controller/metal/renderers.rb#L73">JSON renderer</a>:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>actionpack/lib/action_controller/metal/renderers.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">module</span> <span class="nn">ActionController</span>
+</span><span class='line'>  <span class="k">module</span> <span class="nn">Renderers</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;# ...</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">add :json do |json, options|</span>
+</span><span class='line'><span class="sr">  json = json.to_json(options) unless json.kind_of?(String)</span>
+</span><span class='line'><span class="sr">  json = &quot;</span><span class="si">#{</span><span class="n">options</span><span class="o">[</span><span class="ss">:callback</span><span class="o">]</span><span class="si">}</span><span class="sr">(</span><span class="si">#{</span><span class="n">json</span><span class="si">}</span><span class="sr">)&quot; unless options[:callback].blank?</span>
+</span><span class='line'><span class="sr">  self.content_type ||= Mime::JSON</span>
+</span><span class='line'><span class="sr">  json</span>
+</span><span class='line'><span class="sr">end</span>
+</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>We can see the renderer is passed the resource (potentially as an already-JSON-encoded string) and a set of options. If the resource isn't already encoded, the renderer encodes it using the supplied options. It then wraps it in an optional callback, sets the response MIME type, and returns the output. So our custom renderer might appear as follows:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;h1&gt;app/</span><span class="n">renderers</span><span class="o">/</span><span class="n">api_v1_renderer</span><span class="o">.</span><span class="n">rb</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;ActionController::Renderers.add :api_v1 do |resource, options|</span>
+</span><span class='line'><span class="sr">  self.content_type = Mime::API_V1</span>
+</span><span class='line'><span class="sr">  self.response_body = resource.to_api_v1(options)</span>
+</span><span class='line'><span class="sr">end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="n">app</span><span class="o">/</span><span class="n">controllers</span><span class="o">/</span><span class="n">application_controller</span><span class="o">.</span><span class="n">rb</span><span class="o">&lt;</span><span class="sr">/h1&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;require_relative &#39;../</span><span class="n">renderers</span><span class="o">/</span><span class="n">api_v1_renderer</span><span class="err">&#39;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;class ApplicationController &amp;lt; ActionController::Base</span>
+</span><span class='line'><span class="sr">  #...</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Now all we have to do is define <code>#to_api_v1</code> on every model we want to represent in the API (yes, yes, we know - a horrible mixing of concerns. More on that later.):</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/models/activity.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">Activity</span>
+</span><span class='line'>  <span class="c1">#...&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">to_api_v1</span><span class="p">(</span><span class="n">options</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;{</span>
+</span><span class='line'><span class="sr">  id: id,</span>
+</span><span class='line'><span class="sr">  content: content,</span>
+</span><span class='line'><span class="sr">  creator_name: creator.name</span>
+</span><span class='line'><span class="sr">}.to_json(options)</span>
+</span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  end</span>
+</span><span class='line'><span class="sr">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>As a result of all that, there's no longer any need for the custom response block in our controller methods:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>app/controllers/activities_controller.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ActivitiesController</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="n">respond_to</span> <span class="ss">:html</span><span class="p">,</span> <span class="ss">:api_v1</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="sr">&lt;p&gt;  def show&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="vi">@activity</span> <span class="o">=</span> <span class="no">Activity</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">params</span><span class="o">[</span><span class="ss">:activity_id</span><span class="o">]</span><span class="p">)</span>
+</span><span class='line'><span class="n">respond_with</span><span class="p">(</span><span class="vi">@activity</span><span class="p">)</span>
+</span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>We can now send a request using our custom MIME type in the Accept header, and <a href="https://gist.github.com/1239258">receive an appropriate response</a>.</p>
+
+<p>So far, so good. We've got the Rails responder doing all our heavy lifting, our controllers are clean, and we have versioned resource presentation. That's two of our goals accomplished, but we've still got presentation logic cluttering up our business models. To address that we'll be using Decorators, which will be the subject of our next blog post.</p>
+]]></content>
+  </entry>
+  
+</feed>
