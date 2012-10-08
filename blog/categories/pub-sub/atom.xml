@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Pub/Sub | Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/blog/categories/pub-sub/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-10-08T12:57:58+01:00</updated>
+  <updated>2012-10-08T13:02:05+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -404,9 +404,9 @@ no-one is interested in, it will be silently dropped.</p>
 <span class='line-number'>30</span>
 </pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">MailListener</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="sr">&lt;p&gt;  def initialize(announcer, user_mail_job_klass = MailJob)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'><span class="sr">&lt;p&gt;  def initialize(announcer, mail_job_klass = MailJob)&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="vi">@user_mail_job_klass</span> <span class="o">=</span> <span class="n">user_mail_job_klass</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="vi">@mail_job_klass</span> <span class="o">=</span> <span class="n">mail_job_klass</span>
 </span><span class='line'><span class="n">announcer</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
 </span><span class='line'><span class="o">&lt;</span><span class="sr">/code&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
 </span><span class='line'>
@@ -426,7 +426,7 @@ no-one is interested in, it will be silently dropped.</p>
 </span><span class='line'>
 </span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="nf">mail</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;@user_mail_job_klass.new(*args)</span>
+</span><span class='line'><span class="sr">&lt;pre&gt;&lt;code&gt;@mail_job_klass.new(*args)</span>
 </span><span class='line'><span class="sr">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;</span><span class="sr">/pre&gt;</span>
 </span><span class='line'>
 </span><span class='line'><span class="sr">&lt;p&gt;  end&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>

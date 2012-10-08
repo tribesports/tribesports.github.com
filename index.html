@@ -430,8 +430,8 @@ no-one is interested in, it will be silently dropped.</p>
 <span class='line-number'>21</span>
 </pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">MailListener</span>
 </span><span class='line'>
-</span><span class='line'>  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">announcer</span><span class="p">,</span> <span class="n">user_mail_job_klass</span> <span class="o">=</span> <span class="no">MailJob</span><span class="p">)</span>
-</span><span class='line'>    <span class="vi">@user_mail_job_klass</span> <span class="o">=</span> <span class="n">user_mail_job_klass</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">announcer</span><span class="p">,</span> <span class="n">mail_job_klass</span> <span class="o">=</span> <span class="no">MailJob</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@mail_job_klass</span> <span class="o">=</span> <span class="n">mail_job_klass</span>
 </span><span class='line'>    <span class="n">announcer</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
 </span><span class='line'>  <span class="k">end</span>
 </span><span class='line'>
@@ -445,7 +445,7 @@ no-one is interested in, it will be silently dropped.</p>
 </span><span class='line'>  <span class="kp">private</span>
 </span><span class='line'>
 </span><span class='line'>  <span class="k">def</span> <span class="nf">mail</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-</span><span class='line'>    <span class="vi">@user_mail_job_klass</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@mail_job_klass</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 </span><span class='line'>  <span class="k">end</span>
 </span><span class='line'>
 </span><span class='line'><span class="k">end</span>
