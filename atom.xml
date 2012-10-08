@@ -4,7 +4,7 @@
   <title><![CDATA[Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-10-08T13:02:05+01:00</updated>
+  <updated>2012-10-08T13:18:16+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -24,6 +24,9 @@
 We cleaned ours up using a pub/sub system of announced events and
 task-specific listeners. This made our app easier to modify, easier to
 test, and easier to read. Probably.</p>
+
+<!--more-->
+
 
 <h2>Introduction</h2>
 
@@ -700,6 +703,9 @@ long run. So far, though, so good.</p>
 
 <p>However, we were left with unsightly <code>#to_api_v1</code> methods on all of our business models. We&#8217;d like to separate presentation logic from our business logic, and to do that we&#8217;re going to use decorators. We&#8217;re making use of Jeff Casimir&#8217;s <a href="https://github.com/jcasimir/draper">draper</a> gem, which provides some nice convenience methods for decorating Rails models.</p>
 
+<!--more-->
+
+
 <p>We start by creating a namespaced decorator for our Activity model, and move the <code>Activity#to_api_v1</code> method into it:</p>
 
 <figure class='code'><figcaption><span>app/decorators/api_v1/activity_decorator.rb </span></figcaption>
@@ -914,6 +920,9 @@ long run. So far, though, so good.</p>
 <li>Separate API presentation logic from business models</li>
 <li>Minimise additional controller complexity</li>
 </ol>
+
+
+<!--more-->
 
 
 <p>Like all good REST disciples, we know that adding versioning information to URLs will cause the breakdown of civil society, so we define a custom MIME type for use in the Accept header of requests:</p>

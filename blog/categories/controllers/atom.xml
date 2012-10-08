@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Controllers | Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/blog/categories/controllers/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-10-08T13:02:05+01:00</updated>
+  <updated>2012-10-08T13:18:16+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -24,6 +24,9 @@
 We cleaned ours up using a pub/sub system of announced events and
 task-specific listeners. This made our app easier to modify, easier to
 test, and easier to read. Probably.</p>
+
+<!--more-->
+
 
 <h2>Introduction</h2>
 

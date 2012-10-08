@@ -108,6 +108,9 @@
 
 <p>However, we were left with unsightly <code>#to_api_v1</code> methods on all of our business models. We&#8217;d like to separate presentation logic from our business logic, and to do that we&#8217;re going to use decorators. We&#8217;re making use of Jeff Casimir&#8217;s <a href="https://github.com/jcasimir/draper">draper</a> gem, which provides some nice convenience methods for decorating Rails models.</p>
 
+<!--more-->
+
+
 <p>We start by creating a namespaced decorator for our Activity model, and move the <code>Activity#to_api_v1</code> method into it:</p>
 
 <figure class='code'><figcaption><span>app/decorators/api_v1/activity_decorator.rb </span></figcaption>

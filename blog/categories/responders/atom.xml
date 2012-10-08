@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Responders | Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/blog/categories/responders/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-10-08T13:02:05+01:00</updated>
+  <updated>2012-10-08T13:18:16+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -27,6 +27,9 @@
 <li>Separate API presentation logic from business models</li>
 <li>Minimise additional controller complexity</li>
 </ol>
+
+
+<!--more-->
 
 
 <p>Like all good REST disciples, we know that adding versioning information to URLs will cause the breakdown of civil society, so we define a custom MIME type for use in the Accept header of requests:</p>
