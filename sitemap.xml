@@ -2,28 +2,34 @@
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
         <loc>http://techblog.tribesports.com/blog/2011/07/28/as-a-tech-team</loc>
-        <lastmod>2012-02-26T15:03:35+00:00</lastmod>
+        <lastmod>2012-09-18T20:50:27+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/blog/2011/09/24/versioning-the-tribesports-api</loc>
-        <lastmod>2012-02-26T15:03:35+00:00</lastmod>
+        <lastmod>2012-09-18T20:50:27+01:00</lastmod>
     </url>
     <url>
         <loc>
             http://techblog.tribesports.com/blog/2011/09/24/separating-api-logic-with-decorators
         </loc>
-        <lastmod>2012-02-26T15:03:35+00:00</lastmod>
+        <lastmod>2012-09-18T20:50:27+01:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://techblog.tribesports.com/blog/2012/08/21/pub-sub-system-events-for-post-action-tasks
+        </loc>
+        <lastmod>2012-10-08T12:23:59+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/blog/archives/</loc>
-        <lastmod>2012-02-26T15:03:35+00:00</lastmod>
+        <lastmod>2012-10-08T12:23:59+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/</loc>
-        <lastmod>2012-02-26T15:03:35+00:00</lastmod>
+        <lastmod>2012-10-08T12:23:59+01:00</lastmod>
     </url>
     <url>
         <loc>http://techblog.tribesports.com/join-the-tribe/</loc>
-        <lastmod>2012-02-26T15:03:35+00:00</lastmod>
+        <lastmod>2012-09-18T20:50:27+01:00</lastmod>
     </url>
 </urlset>

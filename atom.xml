@@ -4,7 +4,7 @@
   <title><![CDATA[Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-02-26T15:10:59+00:00</updated>
+  <updated>2012-10-08T12:38:05+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -12,6 +12,682 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Pub/Sub system events for post-action tasks]]></title>
+    <link href="http://techblog.tribesports.com/blog/2012/08/21/pub-sub-system-events-for-post-action-tasks"/>
+    <updated>2012-08-21T20:33:00+01:00</updated>
+    <id>http://techblog.tribesports.com/blog/2012/08/21/pub-sub-system-events-for-post-action-tasks</id>
+    <content type="html"><![CDATA[<h2>TL;DR</h2>
+
+<p>Rails controllers are often a dumping ground for unrelated tasks.
+We cleaned ours up using a pub/sub system of announced events and
+task-specific listeners. This made our app easier to modify, easier to
+test, and easier to read. Probably.</p>
+
+<h2>Introduction</h2>
+
+<p>In many Rails applications, controllers end up cluttered with a wide
+array of post-action tasks: sending emails, posting to Facebook, custom
+analytics/logging and more.</p>
+
+<p>These cross-cutting concerns (and the logic associated with them) can
+end up dominating controller actions, to the point where the controller
+can no longer be easily tested, and the main purpose of the action is
+hard to discern. The following might be an example, although we had much
+more complex actions:</p>
+
+<figure class='code'><figcaption><span>app/controllers/comments_controller.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">CommentsController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">create</span>
+</span><span class='line'>    <span class="n">comment_params</span> <span class="o">=</span> <span class="n">params</span><span class="o">[</span><span class="ss">:comment</span><span class="o">].</span><span class="n">merge</span><span class="p">(</span><span class="ss">:creator</span> <span class="o">=&gt;</span> <span class="n">current_user</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@comment</span> <span class="o">=</span> <span class="no">Comment</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">comment_params</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">if</span> <span class="vi">@comment</span><span class="o">.</span><span class="n">save</span>
+</span><span class='line'>      <span class="k">unless</span> <span class="n">current_user</span> <span class="o">==</span> <span class="vi">@comment</span><span class="o">.</span><span class="n">commentable</span><span class="o">.</span><span class="n">creator</span>
+</span><span class='line'>        <span class="no">UserMailer</span><span class="o">.</span><span class="n">comment</span><span class="p">(</span><span class="vi">@comment</span><span class="o">.</span><span class="n">commentable</span><span class="o">.</span><span class="n">creator</span><span class="p">,</span> <span class="vi">@comment</span><span class="p">)</span><span class="o">.</span><span class="n">deliver</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">current_user</span><span class="o">.</span><span class="n">twitters?</span> <span class="o">&amp;&amp;</span> <span class="n">current_user</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="s2">&quot;twitter_post_comment&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="no">TwitterPoster</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">current_user</span><span class="p">)</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="vi">@comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>      <span class="n">current_user</span><span class="o">.</span><span class="n">reward_for</span><span class="p">(</span><span class="s1">&#39;create_comment&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>    <span class="n">respond_with</span><span class="p">(</span><span class="vi">@comment</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The majority of the action is concerned with doing things only
+indirectly related to the actual creation of the comment. As a result
+there are multiple code paths caused by the conditional logic that are
+laborious to exhaustively test (and slow, because controller tests are
+slow).</p>
+
+<p>Some of the options for reducing this complexity are to move these
+associated tasks into:</p>
+
+<ol>
+<li>ActiveModel lifecycle callbacks</li>
+<li>ActiveModel observers</li>
+<li>Controller filters</li>
+<li>Service objects</li>
+<li>Pub/sub system events</li>
+</ol>
+
+
+<p>Anyone who has made extensive use of lifecycle callbacks for this sort
+of thing will be familiar with the problems that triggering behaviour
+with implicit events can cause (particularly when testing or debugging)
+- we&#8217;re looking for an explicit mechanism where it will still be obvious
+in the controller that our intention is to trigger associated actions.
+And just as we don&#8217;t want to have our controllers responsible for all of
+these secondary concerns, we don&#8217;t want to make our model responsible
+for them either.</p>
+
+<p>We avoid ActiveModel::Observers for much the same reasons, and while
+before/after filters in Rails&#8217; controllers are marginally more explicit
+(being at least localised to the controller doing the action), we&#8217;ve
+found that when they start stacking up they still tend to cause
+surprising and hard-to-debug problems, not least because it can be
+difficult to see which ones will apply to a given action. They&#8217;re also
+fiddly to disable when trying to test a controller action&#8217;s logic in
+isolation from what goes on around it.</p>
+
+<p>Let&#8217;s take a look at the remaining options.</p>
+
+<h2>Service objects</h2>
+
+<p>We could choose to create a service object that is responsible for
+handling these post-commenting tasks. For instance, we might place our
+comment creation logic in its own class as follows:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># app/controllers/comments_controller.rb</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">CommentsController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">create</span>
+</span><span class='line'>    <span class="vi">@comment</span> <span class="o">=</span> <span class="no">CommentCreationService</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">params</span><span class="o">[</span><span class="ss">:comment</span><span class="o">]</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">respond_with</span><span class="p">(</span><span class="vi">@comment</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># app/services/comment_creation_service.rb</span>
+</span><span class='line'><span class="k">class</span> <span class="nc">CommentCreationService</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">comment</span> <span class="o">=</span> <span class="no">Comment</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">comment</span><span class="o">.</span><span class="n">save</span>
+</span><span class='line'>      <span class="n">mail_user</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">post_to_twitter</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">reward_user_for</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>    <span class="n">comment</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">post_to_twitter</span>
+</span><span class='line'>    <span class="c1"># ...</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># ...</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This cleans up the controller, and the service object itself is more
+amenable to testing, but we&#8217;re still left with an object with too
+many collaborators, addressing too many unrelated concerns. Service
+objects can certainly be useful if the actual creation of a comment
+involves more complex manipulation than a simple <code>#create</code> call, but
+they probably shouldn&#8217;t be used as a dumping-ground for ancillary tasks,
+any more than the controller should.</p>
+
+<h2>Pub/Sub</h2>
+
+<p>Here, the idea is to decouple our post-action tasks from the creation
+of the comment. Rather than have any single entity be responsible for
+all of the tasks that creating a comment might trigger, we create the
+comment and announce this event via a message broker (we&#8217;ve called it an
+&#8220;announcer&#8221;). Meanwhile, specialised listeners register their interest
+in certain types of events with the announcer, and respond to those
+events appropriately.</p>
+
+<p>First, let&#8217;s take a look at the announcer:</p>
+
+<figure class='code'><figcaption><span>lib/announcer.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">Announcer</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kp">attr_reader</span> <span class="ss">:listeners</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">listeners</span>
+</span><span class='line'>    <span class="vi">@listeners</span> <span class="o">||=</span> <span class="o">[]</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">add_listener</span><span class="p">(</span><span class="n">listener</span><span class="p">)</span>
+</span><span class='line'>    <span class="nb">self</span><span class="o">.</span><span class="n">listeners</span> <span class="o">&lt;&lt;</span> <span class="n">listener</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">announce</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">listeners</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">listener</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">listener</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="k">if</span> <span class="n">listener</span><span class="o">.</span><span class="n">respond_to?</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>spec/lib/announcer_spec.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="n">require_relative</span> <span class="s1">&#39;../../lib/announcer&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="no">Announcer</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:announcer</span><span class="p">)</span> <span class="p">{</span> <span class="no">Announcer</span><span class="o">.</span><span class="n">new</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">describe</span> <span class="s2">&quot;#add_listener&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;adds a listener to the Announcer&#39;s listeners&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">listener</span> <span class="o">=</span> <span class="n">mock</span><span class="p">(</span><span class="s2">&quot;Listener&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">announcer</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">listener</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">announcer</span><span class="o">.</span><span class="n">listeners</span><span class="o">.</span><span class="n">should</span> <span class="kp">include</span> <span class="n">listener</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">describe</span> <span class="s2">&quot;#announce&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:listener</span><span class="p">)</span> <span class="p">{</span> <span class="n">stub</span><span class="p">(</span><span class="s2">&quot;Listener&quot;</span><span class="p">)</span>                 <span class="p">}</span>
+</span><span class='line'>    <span class="n">before</span>         <span class="p">{</span> <span class="n">announcer</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">listener</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;notifies listeners that respond to the given message&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">listener</span><span class="o">.</span><span class="n">stubs</span><span class="p">(</span><span class="ss">:hello</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">announcer</span><span class="o">.</span><span class="n">announce</span><span class="p">(</span><span class="ss">:hello</span><span class="p">,</span> <span class="s2">&quot;some&quot;</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">listener</span><span class="o">.</span><span class="n">should</span> <span class="n">have_received</span><span class="p">(</span><span class="ss">:hello</span><span class="p">)</span><span class="o">.</span><span class="n">with</span><span class="p">(</span><span class="s2">&quot;some&quot;</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;does not notify listeners that don&#39;t respond to the given message&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">announcer</span><span class="o">.</span><span class="n">announce</span><span class="p">(</span><span class="ss">:hello</span><span class="p">,</span> <span class="s2">&quot;some&quot;</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">listener</span><span class="o">.</span><span class="n">should_not</span> <span class="n">have_received</span><span class="p">(</span><span class="ss">:hello</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This allows listeners to be registered, and sends any announcements
+it receives to interested listeners, where &#8220;interested&#8221; is defined as
+&#8220;responds to the announced message&#8221;. If an event is announced that
+no-one is interested in, it will be silently dropped.</p>
+
+<p>Now let&#8217;s take a look at an example listener:</p>
+
+<figure class='code'><figcaption><span>app/listeners/mail_listener.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">MailListener</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">announcer</span><span class="p">,</span> <span class="n">user_mail_job_klass</span> <span class="o">=</span> <span class="no">MailJob</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@user_mail_job_klass</span> <span class="o">=</span> <span class="n">user_mail_job_klass</span>
+</span><span class='line'>    <span class="n">announcer</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">create_comment</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">commentable</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">commentable</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="n">comment</span><span class="o">.</span><span class="n">creator</span> <span class="o">==</span> <span class="n">commentable</span><span class="o">.</span><span class="n">creator</span>
+</span><span class='line'>      <span class="n">mail</span><span class="p">(</span><span class="ss">:comment</span><span class="p">,</span> <span class="n">commentable</span><span class="o">.</span><span class="n">creator</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kp">private</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">mail</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@user_mail_job_klass</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>spec/listeners/mail_listener_spec.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="n">require_relative</span> <span class="s1">&#39;../../app/listeners/mail_listener&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="no">MailListener</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:job_klass</span><span class="p">)</span> <span class="p">{</span> <span class="n">stub_everything</span><span class="p">(</span><span class="s2">&quot;Class:MailJob&quot;</span><span class="p">,</span> <span class="ss">:new</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:listener</span><span class="p">)</span>  <span class="p">{</span> <span class="no">MailListener</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">job_klass</span><span class="p">)</span>                    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">describe</span> <span class="s2">&quot;#create_comment&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:user</span><span class="p">)</span>        <span class="p">{</span> <span class="n">stub</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>                          <span class="p">}</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:commenter</span><span class="p">)</span>   <span class="p">{</span> <span class="n">stub</span><span class="p">(</span><span class="s2">&quot;User:commenter&quot;</span><span class="p">)</span>                <span class="p">}</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:commentable</span><span class="p">)</span> <span class="p">{</span> <span class="n">stub</span><span class="p">(</span><span class="s2">&quot;Commentable&quot;</span><span class="p">,</span> <span class="ss">:creator</span> <span class="o">=&gt;</span> <span class="n">user</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:comment</span><span class="p">)</span>     <span class="p">{</span> <span class="n">stub</span><span class="p">(</span><span class="s2">&quot;Comment&quot;</span><span class="p">,</span>
+</span><span class='line'>                             <span class="ss">:creator</span> <span class="o">=&gt;</span> <span class="n">commenter</span><span class="p">,</span>
+</span><span class='line'>                             <span class="ss">:commentable</span> <span class="o">=&gt;</span> <span class="n">commentable</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;sends a comment email to the commentable&#39;s creator&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">listener</span><span class="o">.</span><span class="n">create_comment</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">job_klass</span><span class="o">.</span><span class="n">should</span> <span class="n">have_received</span><span class="p">(</span><span class="ss">:new</span><span class="p">)</span><span class="o">.</span><span class="n">with</span><span class="p">(</span><span class="ss">:comment</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;does nothing if the commenter created the commentable&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">commentable</span><span class="o">.</span><span class="n">stubs</span><span class="p">(</span><span class="ss">:creator</span> <span class="o">=&gt;</span> <span class="n">commenter</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">listener</span><span class="o">.</span><span class="n">create_comment</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">job_klass</span><span class="o">.</span><span class="n">should_not</span> <span class="n">have_received</span><span class="p">(</span><span class="ss">:new</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We initialize the listener with an announcer, and the listener registers
+itself. Our <code>MailListener</code> class is interested in handling the
+<code>:create_comment</code> event, so we define a <code>#create_comment</code> method with
+the appropriate signature. Then we do whatever we want: in this case,
+emailing the owner of the entity being commented on to let him know that
+someone has posted a new comment. We also handle the case where the
+owner has commented on his own item, and we write a test case.</p>
+
+<p>We inject the mail job class in the listener&#8217;s constructor rather than
+create a hard dependency - as seen in the associated tests, this allows
+us to pass in a test double on which we can place message expectations.
+We supply a default argument in the <code>#initialize</code> method, however, so we
+don&#8217;t always have to pass in the <code>MailJob</code> class in normal use.</p>
+
+<h2>Integration</h2>
+
+<p>Now we&#8217;ve got an announcer that will dispatch messages to interested
+parties, and a fully-tested listener that responds to a particular
+event. We just need to hook everything together, and announce our event
+in the controller.</p>
+
+<p>For controllers to announce events, we need to put together an
+<code>Announcer</code> instance for them to use. In our <code>ApplicationController</code>, we
+add the following:</p>
+
+<figure class='code'><figcaption><span>app/controllers/application_controller.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">ApplicationController</span> <span class="o">&lt;</span> <span class="no">ActionController</span><span class="o">::</span><span class="no">Base</span>
+</span><span class='line'>  <span class="c1"># ...</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">announcer</span>
+</span><span class='line'>    <span class="vi">@announcer</span> <span class="o">||=</span> <span class="no">Announcer</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">tap</span> <span class="k">do</span> <span class="o">|</span><span class="n">a</span><span class="o">|</span>
+</span><span class='line'>                     <span class="no">MailListener</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+</span><span class='line'>                   <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">announce</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">announcer</span><span class="o">.</span><span class="n">announce</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We&#8217;ve got the infrastructure to announce events - now our original
+controller action becomes the following (let&#8217;s assume we&#8217;ve written
+similar listeners for the other post-action tasks):</p>
+
+<figure class='code'><figcaption><span>app/controllers/comments_controller.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">CommentsController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">create</span>
+</span><span class='line'>    <span class="n">comment_params</span> <span class="o">=</span> <span class="n">params</span><span class="o">[</span><span class="ss">:comment</span><span class="o">].</span><span class="n">merge</span><span class="p">(</span><span class="ss">:creator</span> <span class="o">=&gt;</span> <span class="n">current_user</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@comment</span> <span class="o">=</span> <span class="no">Comment</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">comment_params</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">announce</span><span class="p">(</span><span class="ss">:create_comment</span><span class="p">,</span> <span class="vi">@comment</span><span class="p">)</span> <span class="k">if</span> <span class="vi">@comment</span><span class="o">.</span><span class="n">persisted?</span>
+</span><span class='line'>    <span class="n">respond_with</span><span class="p">(</span><span class="vi">@comment</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>spec/controllers/comments_controller_spec.rb </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="nb">require</span> <span class="s1">&#39;spec_helper&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="no">CommentsController</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">before</span> <span class="k">do</span>
+</span><span class='line'>    <span class="vi">@user</span> <span class="o">=</span> <span class="no">FactoryGirl</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="ss">:user</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">sign_in</span><span class="p">(</span><span class="vi">@user</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">describe</span> <span class="s2">&quot;POST &#39;create&#39;&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:comment</span><span class="p">)</span> <span class="p">{</span> <span class="n">mock_model</span><span class="p">(</span><span class="no">Comment</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:comment_params</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>      <span class="p">{</span> <span class="s1">&#39;commentable_type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Activity&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="s1">&#39;commentable_id&#39;</span> <span class="o">=&gt;</span> <span class="mi">5</span><span class="p">,</span>
+</span><span class='line'>        <span class="s1">&#39;comment&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;hello&#39;</span> <span class="p">}</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>    <span class="n">before</span> <span class="p">{</span> <span class="no">Comment</span><span class="o">.</span><span class="n">stubs</span><span class="p">(</span><span class="ss">:create</span> <span class="o">=&gt;</span> <span class="n">comment</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;creates a comment and announces a :create_comment event&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">comment</span><span class="o">.</span><span class="n">stubs</span><span class="p">(</span><span class="ss">:persisted?</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">post</span><span class="p">(</span><span class="s1">&#39;create&#39;</span><span class="p">,</span> <span class="s1">&#39;comment&#39;</span> <span class="o">=&gt;</span> <span class="n">comment_params</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="no">Comment</span><span class="o">.</span><span class="n">should</span> <span class="n">have_received</span><span class="p">(</span><span class="ss">:create</span><span class="p">)</span><span class="o">.</span><span class="n">with</span><span class="p">(</span><span class="n">comment_params</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="ss">:creator</span> <span class="o">=&gt;</span> <span class="vi">@user</span><span class="p">))</span>
+</span><span class='line'>      <span class="n">announcer</span><span class="o">.</span><span class="n">should</span> <span class="n">have_announced</span><span class="p">(</span><span class="ss">:create_comment</span><span class="p">)</span><span class="o">.</span><span class="n">with</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">response</span><span class="o">.</span><span class="n">should</span> <span class="n">redirect_to</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;renders the &#39;new&#39; template and announces nothing if the comment was not saved&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">comment</span><span class="o">.</span><span class="n">stubs</span><span class="p">(</span><span class="ss">:persisted?</span> <span class="o">=&gt;</span> <span class="kp">false</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">post</span><span class="p">(</span><span class="s1">&#39;create&#39;</span><span class="p">,</span> <span class="s1">&#39;comment&#39;</span> <span class="o">=&gt;</span> <span class="n">comment_params</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">announcer</span><span class="o">.</span><span class="n">should_not</span> <span class="n">have_announced</span><span class="p">(</span><span class="ss">:create_comment</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">response</span><span class="o">.</span><span class="n">should</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;new&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Our controller action is now much cleaner. It assembles user input,
+uses it to create the comment, then announces the relevant event and
+hands over to Rails&#8217; responder to handle rendering or redirecting as
+appropriate. And that&#8217;s it. It doesn&#8217;t need to know about emails, or
+posting to Twitter, or site gamification rewards, or anything other than
+creating a comment.</p>
+
+<p>Our test is also simpler, and fully covers the action&#8217;s logic. We&#8217;re
+using a stub announcer and a custom RSpec matcher to allow us to test
+whether events have been announced, but we won&#8217;t go in to the details
+of that in this post. Each test contains multiple assertions, which
+isn&#8217;t great, but controller tests run slowly enough that it can be worth
+making an exception to this rule of thumb.</p>
+
+<h2>Integration Tests</h2>
+
+<p>Our post-action tasks are now decoupled from our controller, and our
+controller tests examine only the controller&#8217;s behaviour. So while we&#8217;ve
+gained coverage in some areas (we&#8217;ve now got thorough unit tests on
+our listeners, for example), we&#8217;ve lost some elsewhere. Our original
+controller tests, despite being gross, slow and unwieldy (not to mention
+incomplete) did at least exercise quite a lot of our application stack.</p>
+
+<p>What to do about this? Well, write some more integration tests, as
+opposed to integration tests masquerading as unit tests. In our case
+we&#8217;ve expanded our cucumber suite, making sure that at least one
+scenario exercises each of our listeners&#8217; core functionality. This way
+we can be confident that we&#8217;ve hooked things up properly. For critical
+functionality, we further verify the expected outcomes. The level of
+coverage we&#8217;re applying depends on how critical the functionality is.
+Things that drive user interaction are of paramount importance, like
+emails and activity recording. Other things (like custom analytics)
+might not be so important.</p>
+
+<h2>Conclusions and caveats</h2>
+
+<p>Okay, so we&#8217;ve done all this work. So what? What&#8217;s better about our
+system now? We feel the pros and cons break down as follows.</p>
+
+<p><strong>Advantages</strong>:</p>
+
+<ol>
+<li>Controller actions aren&#8217;t cluttered up with tangential tasks</li>
+<li>Logic related to mailing, twitter posting etc. is kept in one place</li>
+<li>Said logic can be tested in isolation from the controllers</li>
+<li>Controller tests are simpler because you&#8217;re dealing with fewer immediate
+collaborators</li>
+<li>Adding a new type of post-action task (e.g. analytics handling) only
+requires a new listener - we don&#8217;t need to make changes in multiple
+controller actions</li>
+<li>It&#8217;s now easier to make responses to system events asynchronous,
+speeding up our page render times.</li>
+</ol>
+
+
+<p><strong>Disadvantages</strong>:</p>
+
+<ol>
+<li>It&#8217;s no longer so easy to see at a glance all of the things that happen in
+response to a given controller action</li>
+<li>Because the listeners are more loosely coupled, and tested in
+isolation from the controllers, integration tests become more important.</li>
+</ol>
+
+
+<p>The disadvantages are not to be dismissed. Controller tests are simpler,
+but they&#8217;re also exercising fewer of our app&#8217;s components (since we&#8217;re
+providing a stub announcer that does no forwarding), so coverage is
+decreased. Listener logic may be thoroughly tested, but in isolation: we
+need to make sure that we&#8217;re putting these loosely-coupled components
+together properly in our full app, and that the listeners interact
+properly with real collaborators, as opposed to our test doubles. This
+places a greater responsibility on our integration tests.</p>
+
+<p>The advantages, however, are really significant. A change to, for
+example, our user activity recording now no longer requires changes in
+tens of controller actions; those changes are localised to one place,
+and we no longer need to fret about finding every instance of activity
+recording in our app. Lots of logic that was previously untestable is
+now covered in listener tests, increasing our confidence in the correct
+behaviour of our app. And these tests are blazing fast, because they
+don&#8217;t depend on Rails.</p>
+
+<p>Looking further forward, we&#8217;re likely to want to move these post-action
+tasks to an asynchronous system, to get all but the most critical
+actions out of our render path. Having a single point of entry for
+system events (the announcer) makes it far easier for us to achieve
+this.</p>
+
+<h2>Should you do this in your app?</h2>
+
+<p>I don&#8217;t know. Maybe?</p>
+
+<p>This was a response to our controllers having built up a thick crust of
+cross-cutting concerns during the lifetime of our app. At the moment
+weeve got 9 listeners handling around 150 different post-action tasks,
+and there&#8217;s more work to be done. For us, the benefits of moving to this
+system have been pretty clear already. For a smaller app, or one with a
+shorter projected lifespan, this approach may well be overkill.</p>
+
+<p>It should also be pointed out that we&#8217;ve only been living with this
+system for a short while - it remains to be seen how it pans out in the
+long run. So far, though, so good.</p>
+
+<p>p.s. Why yes, I did find out about Ruby&#8217;s built-in
+<a href="http://www.ruby-doc.org/stdlib-1.9.3/libdoc/observer/rdoc%0A/Observable.html"><code>Observable</code></a> module right after writing this. Ignorance > NIH, right?</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Separating API Logic With Decorators]]></title>
