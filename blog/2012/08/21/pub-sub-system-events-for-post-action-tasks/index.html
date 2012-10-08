@@ -478,11 +478,13 @@ no-one is interested in, it will be silently dropped.</p>
 <span class='line-number'>24</span>
 <span class='line-number'>25</span>
 <span class='line-number'>26</span>
+<span class='line-number'>27</span>
 </pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="n">require_relative</span> <span class="s1">&#39;../../app/listeners/mail_listener&#39;</span>
 </span><span class='line'>
 </span><span class='line'><span class="n">describe</span> <span class="no">MailListener</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:announcer</span><span class="p">)</span> <span class="p">{</span> <span class="n">stub_everything</span><span class="p">(</span><span class="s2">&quot;Announcer&quot;</span><span class="p">)</span>                   <span class="p">}</span>
 </span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:job_klass</span><span class="p">)</span> <span class="p">{</span> <span class="n">stub_everything</span><span class="p">(</span><span class="s2">&quot;Class:MailJob&quot;</span><span class="p">,</span> <span class="ss">:new</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:listener</span><span class="p">)</span>  <span class="p">{</span> <span class="no">MailListener</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">job_klass</span><span class="p">)</span>                    <span class="p">}</span>
+</span><span class='line'>  <span class="n">let</span><span class="p">(</span><span class="ss">:listener</span><span class="p">)</span>  <span class="p">{</span> <span class="no">MailListener</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">announcer</span><span class="p">,</span> <span class="n">job_klass</span><span class="p">)</span>         <span class="p">}</span>
 </span><span class='line'>
 </span><span class='line'>  <span class="n">describe</span> <span class="s2">&quot;#create_comment&quot;</span> <span class="k">do</span>
 </span><span class='line'>    <span class="n">let</span><span class="p">(</span><span class="ss">:user</span><span class="p">)</span>        <span class="p">{</span> <span class="n">stub</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>                          <span class="p">}</span>
@@ -763,7 +765,7 @@ this.</p>
 
 <p>This was a response to our controllers having built up a thick crust of
 cross-cutting concerns during the lifetime of our app. At the moment
-weeve got 9 listeners handling around 150 different post-action tasks,
+we&#8217;ve got 9 listeners handling around 150 different post-action tasks,
 and there&#8217;s more work to be done. For us, the benefits of moving to this
 system have been pretty clear already. For a smaller app, or one with a
 shorter projected lifespan, this approach may well be overkill.</p>

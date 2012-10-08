@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Pub/Sub | Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/blog/categories/pub-sub/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-10-08T12:38:05+01:00</updated>
+  <updated>2012-10-08T12:57:58+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -464,11 +464,13 @@ no-one is interested in, it will be silently dropped.</p>
 <span class='line-number'>27</span>
 <span class='line-number'>28</span>
 <span class='line-number'>29</span>
+<span class='line-number'>30</span>
 </pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="n">require_relative</span> <span class="s1">&#39;../../app/listeners/mail_listener&#39;</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
 </span><span class='line'>
 </span><span class='line'><span class="sr">&lt;p&gt;describe MailListener do</span>
+</span><span class='line'><span class="sr">  let(:announcer) { stub_everything(&quot;Announcer&quot;)                   }</span>
 </span><span class='line'><span class="sr">  let(:job_klass) { stub_everything(&quot;Class:MailJob&quot;, :new =&gt; true) }</span>
-</span><span class='line'><span class="sr">  let(:listener)  { MailListener.new(job_klass)                    }&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
+</span><span class='line'><span class="sr">  let(:listener)  { MailListener.new(announcer, job_klass)         }&lt;/</span><span class="nb">p</span><span class="o">&gt;</span>
 </span><span class='line'>
 </span><span class='line'><span class="o">&lt;</span><span class="nb">p</span><span class="o">&gt;</span>  <span class="n">describe</span> <span class="s2">&quot;#create_comment&quot;</span> <span class="k">do</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
 </span><span class='line'>
@@ -776,7 +778,7 @@ this.</p>
 
 <p>This was a response to our controllers having built up a thick crust of
 cross-cutting concerns during the lifetime of our app. At the moment
-weeve got 9 listeners handling around 150 different post-action tasks,
+we've got 9 listeners handling around 150 different post-action tasks,
 and there's more work to be done. For us, the benefits of moving to this
 system have been pretty clear already. For a smaller app, or one with a
 shorter projected lifespan, this approach may well be overkill.</p>
