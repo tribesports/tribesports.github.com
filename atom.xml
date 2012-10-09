@@ -4,7 +4,7 @@
   <title><![CDATA[Tribesports Tech Blog]]></title>
   <link href="http://techblog.tribesports.com/atom.xml" rel="self"/>
   <link href="http://techblog.tribesports.com/"/>
-  <updated>2012-10-08T13:18:16+01:00</updated>
+  <updated>2012-10-09T15:56:39+01:00</updated>
   <id>http://techblog.tribesports.com/</id>
   <author>
     <name><![CDATA[Tribesports Tech Team]]></name>
@@ -224,11 +224,7 @@ events appropriately.</p>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
 <span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
 </pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">class</span> <span class="nc">Announcer</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kp">attr_reader</span> <span class="ss">:listeners</span>
 </span><span class='line'>
 </span><span class='line'>  <span class="k">def</span> <span class="nf">listeners</span>
 </span><span class='line'>    <span class="vi">@listeners</span> <span class="o">||=</span> <span class="o">[]</span>
